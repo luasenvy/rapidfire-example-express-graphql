@@ -1,8 +1,8 @@
 const GraphqlService = require('../interfaces/GraphqlService')
 
 class UserService extends GraphqlService {
-  constructor({ router }) {
-    super()
+  constructor({ router, elastic }) {
+    super({ elastic })
 
     router.get('/api/users', (req, res, next) => this.searchUser(req, res).catch(next))
 

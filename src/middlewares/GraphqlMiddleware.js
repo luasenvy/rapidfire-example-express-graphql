@@ -1,14 +1,40 @@
+const fs = require('fs')
+const path = require('path')
+
 const {
   Interfaces: { Middleware },
 } = require('@luasenvy/rapidfire')
 
-const fs = require('fs')
-const path = require('path')
-
 const { graphqlHTTP: expressGraphql } = require('express-graphql')
-const { makeExecutableSchema } = require('graphql')
+const { GraphQLScalarType } = require('graphql')
+const { makeExecutableSchema } = require('@graphql-tools/schema')
 
 const constants = {
+  defaults: {
+    graphqlSchema: {
+      typeDefs: `
+      type Query
+      type Mutation
+
+      scalar Date
+    `,
+      resolvers: {
+        Date: new GraphQLScalarType({
+          name: 'Date',
+          description: 'Date Scalar Type',
+          serialize(value) {
+            return value.toISOString()
+          },
+          parseValue(value) {
+            return new Date(value)
+          },
+          parseLiteral({ value }) {
+            return new Date(value)
+          },
+        }),
+      },
+    },
+  },
   paths: {
     graphql: {
       schemas: path.join(__dirname, '../graphql/schemas'),
@@ -43,17 +69,42 @@ class GraphqlMiddleware extends Middleware {
   }
 
   async init() {
-    const elastic = this.$rapidfire.dbs.find(db => db instanceof Elasticsearch)
     const schemaPathnames = fn.getSchemaPathnames({ docroot: constants.paths.graphql.schemas })
 
+    // Load Schemas
     this.schemas = schemaPathnames.map(schemaPathname => {
       const Schema = require(schemaPathname)
-      return makeExecutableSchema(new Schema({ elastic }))
+
+      const schema = new Schema()
+      schema.$rapidfire = this.$rapidfire
+      return schema
     })
 
-    this.expressGraphql = expressGraphql({ schema: schema(this.typedefs), rootValue: { hello: () => 'hello world :)' }, graphiql: true })
+    // Init Schemas
+
+    for (const schema of this.schemas) await schema.init()
+
+    const { typeDefs, resolvers } = this.schemas.reduce(
+      (acc, { typedef, queries, mutations }) =>
+        Object.assign(acc, {
+          typeDefs: acc.typeDefs.concat(typedef),
+          resolvers: {
+            Query: { ...acc.resolvers.Query, ...queries },
+            Mutation: { ...acc.resolvers.Mutation, ...mutations },
+          },
+        }),
+      { typeDefs: constants.defaults.graphqlSchema.typeDefs, resolvers: constants.defaults.graphqlSchema.resolvers }
+    )
+
+    const schema = makeExecutableSchema({ typeDefs, resolvers })
+
+    this.expressGraphql = expressGraphql({ schema, graphiql: true })
 
     this.pipelines.push({ pattern: '/graphql', pipe: this.expressGraphql })
+  }
+
+  toKebabCase(str) {
+    return str.replace(/(?!^[A-Z])([A-Z])/g, '-$1').toLowerCase()
   }
 }
 

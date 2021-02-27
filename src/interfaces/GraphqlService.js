@@ -2,19 +2,15 @@ const {
   Interfaces: { Service },
 } = require('@luasenvy/rapidfire')
 
+const GraphqlServiceLoader = require('../loaders/GraphqlServiceLoaders')
+
 class GraphqlService extends Service {
-  constructor() {
+  static loader = GraphqlServiceLoader
+
+  constructor({ elastic }) {
     super()
 
-    this._elastic = null
-  }
-
-  get elastic() {
-    return this._elastic
-  }
-
-  set elastic(elastic) {
-    this._elastic = elastic
+    this.elastic = elastic
   }
 }
 

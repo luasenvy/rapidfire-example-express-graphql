@@ -13,6 +13,7 @@
   "license": "BEERWARE",
   "dependencies": {
     "@elastic/elasticsearch": "^7.11.0",
+    "@graphql-tools/schema": "^7.1.3",
     "@luasenvy/rapidfire": "^0.1.16",
     "express-graphql": "^0.12.0",
     "graphql": "^15.5.0"
