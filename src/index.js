@@ -40,8 +40,6 @@ async function main() {
       port: 8000,
       paths: {
         middlewares: path.join(__dirname, 'middlewares'),
-        services: path.join(__dirname, 'services'),
-        loaders: path.join(__dirname, 'loaders'),
       },
       dbs: [client],
     })
