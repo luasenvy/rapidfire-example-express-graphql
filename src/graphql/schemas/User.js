@@ -12,6 +12,7 @@ class User extends ElasticsearchSchema {
       type User {
         _id: String
         name: String
+        updatedAt: Date
         createdAt: Date
       }
 
@@ -21,7 +22,9 @@ class User extends ElasticsearchSchema {
       }
 
       extend type Mutation {
-        createUser(input: UserInput): User
+        createUser(user: UserInput): User
+        updateUser(_id: String!, user: UserInput): User
+        deleteUser(_id: String!): Void
       }
     `
 
@@ -32,10 +35,34 @@ class User extends ElasticsearchSchema {
 
     this.mutations = {
       createUser: this.createUser.bind(this),
+      updateUser: this.updateUser.bind(this),
+      deleteUser: this.deleteUser.bind(this),
     }
   }
 
-  async createUser(args, { input: user }) {
+  async deleteUser(args, { _id: id }) {
+    await this.elastic.delete({ index: this.index, id, refresh: 'wait_for' })
+    return
+  }
+
+  async updateUser(args, { _id: id, user }) {
+    const updatedAt = new Date()
+    await this.elastic.update({
+      index: this.index,
+      refresh: 'wait_for',
+      id,
+      body: {
+        doc: {
+          ...user,
+          updatedAt,
+        },
+      },
+    })
+
+    return { ...user, updatedAt }
+  }
+
+  async createUser(args, { user }) {
     const createdAt = new Date()
     const {
       body: { _id },

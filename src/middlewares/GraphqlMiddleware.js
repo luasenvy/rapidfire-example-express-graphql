@@ -17,8 +17,16 @@ const constants = {
       type Mutation
 
       scalar Date
+      scalar Void
     `,
       resolvers: {
+        Void: new GraphQLScalarType({
+          name: 'Void',
+          description: 'Void Scalar Type',
+          serialize: () => undefined,
+          parseValue: () => undefined,
+          parseLiteral: () => undefined,
+        }),
         Date: new GraphQLScalarType({
           name: 'Date',
           description: 'Date Scalar Type',
