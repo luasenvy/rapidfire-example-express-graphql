@@ -14,6 +14,7 @@ class ElasticsearchSchema {
       await this.elastic.indices.get({ index: this.index })
     } catch (err) {
       if (err.body.error.type === 'index_not_found_exception') await this.elastic.indices.create({ index: this.index, wait_for_active_shards: 'all' })
+      // Ignore Others
     }
   }
 
