@@ -36,18 +36,19 @@ class User extends ElasticsearchSchema {
   }
 
   async createUser(args, { input: user }) {
+    const createdAt = new Date()
     const {
-      body: { _id: createdId },
+      body: { _id },
     } = await this.elastic.index({
       index: this.index,
       refresh: 'wait_for',
       body: {
         ...user,
-        createdAt: new Date(),
+        createdAt,
       },
     })
 
-    return Object.assign(user, { _id: createdId })
+    return { ...user, _id, createdAt }
   }
 
   async getUsers() {
