@@ -20,6 +20,8 @@ const constants = {
       scalar Void
     `,
       resolvers: {
+        Query: {},
+        Mutation: {},
         Void: new GraphQLScalarType({
           name: 'Void',
           description: 'Void Scalar Type',
@@ -97,8 +99,8 @@ class GraphqlMiddleware extends Middleware {
         Object.assign(acc, {
           typeDefs: acc.typeDefs.concat(typedef),
           resolvers: {
-            Query: { ...acc.resolvers.Query, ...queries },
-            Mutation: { ...acc.resolvers.Mutation, ...mutations },
+            Query: Object.assign(acc.resolvers.Query, queries),
+            Mutation: Object.assign(acc.resolvers.Mutation, mutations),
           },
         }),
       { typeDefs: constants.defaults.graphqlSchema.typeDefs, resolvers: constants.defaults.graphqlSchema.resolvers }
