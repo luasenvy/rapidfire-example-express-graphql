@@ -4,7 +4,8 @@
   "description": "Rapidfire Express Graphql Example",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --inspect src/index",
+    "docs": "rm -rf docs && graphdoc -e http://localhost:8000/graphql -o docs",
+    "dev": "nodemon --inspect --ignore docs src/index.js",
     "start": "node src/index",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,6 +20,7 @@
     "graphql": "^15.5.0"
   },
   "devDependencies": {
+    "@2fd/graphdoc": "^2.4.0",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.20.0",
     "eslint-config-prettier": "^8.1.0",
