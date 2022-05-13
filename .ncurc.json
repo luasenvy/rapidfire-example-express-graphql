@@ -1,0 +1,3 @@
+{
+  "reject": ["@elastic/elasticsearch"]
+}

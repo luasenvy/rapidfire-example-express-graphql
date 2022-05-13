@@ -1,13 +1,30 @@
-const fs = require('fs')
-const path = require('path')
+/* **************************************************************************
+ *   ██╗  ███╗   ███╗  ██████╗    ██████╗   ██████╗   ████████╗  ███████╗   *
+ *   ██║  ████╗ ████║  ██╔══██╗  ██╔═══██╗  ██╔══██╗  ╚══██╔══╝  ██╔════╝   *
+ *   ██║  ██╔████╔██║  ██████╔╝  ██║   ██║  ██████╔╝     ██║     ███████╗   *
+ *   ██║  ██║╚██╔╝██║  ██╔═══╝   ██║   ██║  ██╔══██╗     ██║     ╚════██║   *
+ *   ██║  ██║ ╚═╝ ██║  ██║       ╚██████╔╝  ██║  ██║     ██║     ███████║   *
+ *   ╚═╝  ╚═╝     ╚═╝  ╚═╝        ╚═════╝   ╚═╝  ╚═╝     ╚═╝     ╚══════╝   *
+ ************************************************************************** */
+import { join as pathJoin, dirname as pathDirname } from 'path'
+import { statSync as fsStatSync, readdirSync as fsReaddirSync } from 'fs'
+import { fileURLToPath as urlFileURLToPath } from 'url'
 
-const {
-  Interfaces: { Middleware },
-} = require('@luasenvy/rapidfire')
+import { Interfaces } from '@luasenvy/rapidfire'
 
-const { graphqlHTTP: expressGraphql } = require('express-graphql')
-const { GraphQLScalarType } = require('graphql')
-const { makeExecutableSchema } = require('@graphql-tools/schema')
+import { graphqlHTTP as expressGraphql } from 'express-graphql'
+import { GraphQLScalarType } from 'graphql'
+import { makeExecutableSchema } from '@graphql-tools/schema'
+
+/* **************************************************************************
+ *                  ██╗   ██╗   █████╗   ██████╗   ███████╗                 *
+ *                  ██║   ██║  ██╔══██╗  ██╔══██╗  ██╔════╝                 *
+ *                  ██║   ██║  ███████║  ██████╔╝  ███████╗                 *
+ *                  ╚██╗ ██╔╝  ██╔══██║  ██╔══██╗  ╚════██║                 *
+ *                   ╚████╔╝   ██║  ██║  ██║  ██║  ███████║                 *
+ *                    ╚═══╝    ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚══════╝                 *
+ ************************************************************************** */
+const __dirname = pathDirname(urlFileURLToPath(import.meta.url))
 
 const constants = {
   defaults: {
@@ -47,30 +64,38 @@ const constants = {
   },
   paths: {
     graphql: {
-      schemas: path.join(__dirname, '../graphql/schemas'),
+      schemas: pathJoin(__dirname, '../graphql/schemas'),
     },
   },
 }
 
 const fn = {
   getSchemasRecursively({ parent, filename }) {
-    const filepath = path.join(parent, filename)
+    const filepath = pathJoin(parent, filename)
 
-    if (fs.statSync(filepath).isFile()) {
+    if (fsStatSync(filepath).isFile()) {
       if (filename.endsWith('.js')) return filepath
       return
     }
 
-    return fs.readdirSync(filepath).flatMap(filename => fn.getSchemasRecursively({ parent: filepath, filename }))
+    return fsReaddirSync(filepath).flatMap(filename => fn.getSchemasRecursively({ parent: filepath, filename }))
   },
   getSchemaPathnames({ docroot }) {
-    const schemaFilenames = fs.readdirSync(docroot)
+    const schemaFilenames = fsReaddirSync(docroot)
     const schemaPathnames = schemaFilenames.flatMap(schemaFileName => fn.getSchemasRecursively({ parent: docroot, filename: schemaFileName })).filter(Boolean)
     return schemaPathnames
   },
 }
 
-class GraphqlMiddleware extends Middleware {
+/* **************************************************************************
+ *                      ██████╗   ██╗   ██╗  ███╗   ██╗                     *
+ *                      ██╔══██╗  ██║   ██║  ████╗  ██║                     *
+ *                      ██████╔╝  ██║   ██║  ██╔██╗ ██║                     *
+ *                      ██╔══██╗  ██║   ██║  ██║╚██╗██║                     *
+ *                      ██║  ██║  ╚██████╔╝  ██║ ╚████║                     *
+ *                      ╚═╝  ╚═╝   ╚═════╝   ╚═╝  ╚═══╝                     *
+ ************************************************************************** */
+class GraphqlMiddleware extends Interfaces.Middleware {
   constructor() {
     super()
 
@@ -82,13 +107,15 @@ class GraphqlMiddleware extends Middleware {
     const schemaPathnames = fn.getSchemaPathnames({ docroot: constants.paths.graphql.schemas })
 
     // Load Schemas
-    this.schemas = schemaPathnames.map(schemaPathname => {
-      const Schema = require(schemaPathname)
+    this.schemas = await Promise.all(
+      schemaPathnames.map(async schemaPathname => {
+        const { default: Schema } = await import(schemaPathname)
 
-      const schema = new Schema()
-      schema.$rapidfire = this.$rapidfire
-      return schema
-    })
+        const schema = new Schema()
+        schema.$rapidfire = this.$rapidfire
+        return schema
+      })
+    )
 
     // Init Schemas
 
@@ -118,4 +145,12 @@ class GraphqlMiddleware extends Middleware {
   }
 }
 
-module.exports = GraphqlMiddleware
+/* **************************************************************************
+ *      ██████╗   ███████╗  ████████╗  ██╗   ██╗  ██████╗   ███╗   ██╗      *
+ *      ██╔══██╗  ██╔════╝  ╚══██╔══╝  ██║   ██║  ██╔══██╗  ████╗  ██║      *
+ *      ██████╔╝  █████╗       ██║     ██║   ██║  ██████╔╝  ██╔██╗ ██║      *
+ *      ██╔══██╗  ██╔══╝       ██║     ██║   ██║  ██╔══██╗  ██║╚██╗██║      *
+ *      ██║  ██║  ███████╗     ██║     ╚██████╔╝  ██║  ██║  ██║ ╚████║      *
+ *      ╚═╝  ╚═╝  ╚══════╝     ╚═╝      ╚═════╝   ╚═╝  ╚═╝  ╚═╝  ╚═══╝      *
+ ************************************************************************** */
+export default GraphqlMiddleware
